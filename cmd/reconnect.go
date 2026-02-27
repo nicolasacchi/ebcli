@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -100,7 +101,7 @@ func runReconnect(cmd *cobra.Command, args []string) error {
 
 	// New auth flow
 	state := uuid.New().String()
-	callbackURL := auth.CallbackURL(port)
+	callbackURL := auth.CallbackURL(port, app.Config.CallbackURL)
 
 	authReq := &api.AuthRequest{
 		Access: api.AccessScope{
@@ -125,10 +126,9 @@ func runReconnect(cmd *cobra.Command, args []string) error {
 	if approach == "DECOUPLED" {
 		app.Printer.Info("Please complete authorization in your banking app...")
 	} else {
-		app.Printer.Info("Opening bank authorization page...")
-		if err := openBrowser(authResp.URL); err != nil {
-			app.Printer.Warn("Could not open browser. Visit: %s", authResp.URL)
-		}
+		app.Printer.Info("Open this URL to authorize:")
+		fmt.Fprintln(os.Stderr, authResp.URL)
+		_ = openBrowser(authResp.URL)
 	}
 
 	result, err := auth.ListenForCallback(ctx, port, state)

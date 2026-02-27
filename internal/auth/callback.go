@@ -100,6 +100,10 @@ func ListenForCallback(ctx context.Context, port int, expectedState string) (*Ca
 }
 
 // CallbackURL returns the full redirect URL for a given port.
-func CallbackURL(port int) string {
+// If override is non-empty, it is returned as-is (for public callback URLs).
+func CallbackURL(port int, override string) string {
+	if override != "" {
+		return override
+	}
 	return fmt.Sprintf("http://localhost:%d%s", port, CallbackPath)
 }

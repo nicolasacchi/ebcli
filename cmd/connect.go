@@ -109,7 +109,7 @@ func doConnect(ctx context.Context, country, bankName, connName string, validDay
 	state := uuid.New().String()
 
 	// Step 5: POST /auth
-	callbackURL := auth.CallbackURL(port)
+	callbackURL := auth.CallbackURL(port, app.Config.CallbackURL)
 	authReq := &api.AuthRequest{
 		Access: api.AccessScope{
 			ValidUntil:   validUntil.Format(time.RFC3339),
@@ -135,11 +135,9 @@ func doConnect(ctx context.Context, country, bankName, connName string, validDay
 		app.Printer.Info("Please complete authorization in your banking app...")
 		app.Printer.Info("Waiting for confirmation (timeout: 5 minutes)...")
 	} else {
-		app.Printer.Info("Opening bank authorization page in your browser...")
-		if err := openBrowser(authResp.URL); err != nil {
-			app.Printer.Warn("Could not open browser. Please visit this URL manually:")
-			fmt.Fprintln(os.Stderr, authResp.URL)
-		}
+		app.Printer.Info("Open this URL to authorize:")
+		fmt.Fprintln(os.Stderr, authResp.URL)
+		_ = openBrowser(authResp.URL)
 	}
 
 	// Wait for callback

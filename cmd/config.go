@@ -198,12 +198,14 @@ func runConfigShow(cmd *cobra.Command) error {
 		AppID          string `json:"app_id"`
 		PrivateKeyPath string `json:"private_key_path"`
 		Environment    string `json:"environment"`
+		CallbackURL    string `json:"callback_url,omitempty"`
 		ConfigPath     string `json:"config_path"`
 		Connections    int    `json:"connections"`
 	}{
 		AppID:          cfg.AppID,
 		PrivateKeyPath: cfg.PrivateKeyPath,
 		Environment:    cfg.Environment,
+		CallbackURL:    cfg.CallbackURL,
 		ConfigPath:     cfgPath,
 		Connections:    len(cfg.Connections),
 	}

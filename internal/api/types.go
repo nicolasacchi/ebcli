@@ -6,22 +6,36 @@ import "time"
 
 // ASPSPData represents a bank from the GET /aspsps endpoint.
 type ASPSPData struct {
-	Name                   string       `json:"name"`
-	Country                string       `json:"country"`
-	Logo                   string       `json:"logo,omitempty"`
-	BIC                    string       `json:"bic,omitempty"`
-	PSUTypes               []string     `json:"psu_types"`
-	AuthMethods            []AuthMethod `json:"auth_methods"`
-	Beta                   bool         `json:"beta"`
-	MaximumConsentValidity int          `json:"maximum_consent_validity"` // seconds
-	RequiredPSUHeaders     []string     `json:"required_psu_headers,omitempty"`
+	Name                   string         `json:"name"`
+	Country                string         `json:"country"`
+	Logo                   string         `json:"logo,omitempty"`
+	BIC                    string         `json:"bic,omitempty"`
+	PSUTypes               []string       `json:"psu_types"`
+	AuthMethods            []AuthMethod   `json:"auth_methods"`
+	Beta                   bool           `json:"beta"`
+	MaximumConsentValidity int            `json:"maximum_consent_validity"` // seconds
+	RequiredPSUHeaders     []string       `json:"required_psu_headers,omitempty"`
+	Sandbox                *SandboxConfig `json:"sandbox,omitempty"`
+}
+
+// SandboxConfig holds sandbox test user credentials for a bank.
+type SandboxConfig struct {
+	Users []SandboxUser `json:"users,omitempty"`
+}
+
+// SandboxUser is a test credential for sandbox mode.
+type SandboxUser struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // AuthMethod describes a bank authentication method.
 type AuthMethod struct {
-	Name     string `json:"name"`
-	Approach string `json:"approach"` // REDIRECT, DECOUPLED, EMBEDDED
-	PSUType  string `json:"psu_type,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Title        string `json:"title,omitempty"`
+	Approach     string `json:"approach"` // REDIRECT, DECOUPLED, EMBEDDED
+	PSUType      string `json:"psu_type,omitempty"`
+	HiddenMethod bool   `json:"hidden_method,omitempty"`
 }
 
 // --- Auth request/response ---
@@ -99,12 +113,14 @@ type AccountID struct {
 
 // SessionStatus is the response from GET /sessions/{session_id}.
 type SessionStatus struct {
-	SessionID string            `json:"session_id"`
-	Status    string            `json:"status"`
-	Accounts  []AccountResource `json:"accounts,omitempty"`
-	ASPSP     ASPSPRef          `json:"aspsp"`
-	PSUType   string            `json:"psu_type"`
-	Access    AccessInfo        `json:"access"`
+	Status       string            `json:"status"`
+	Accounts     []string          `json:"accounts,omitempty"`
+	AccountsData []AccountResource `json:"accounts_data,omitempty"`
+	ASPSP        ASPSPRef          `json:"aspsp"`
+	PSUType      string            `json:"psu_type"`
+	Access       AccessInfo        `json:"access"`
+	Authorized   string            `json:"authorized,omitempty"`
+	Created      string            `json:"created,omitempty"`
 }
 
 // --- Account data types ---

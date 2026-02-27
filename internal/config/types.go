@@ -7,6 +7,7 @@ type Config struct {
 	AppID          string       `json:"app_id"`
 	PrivateKeyPath string       `json:"private_key_path"`
 	Environment    string       `json:"environment"` // "PRODUCTION" or "SANDBOX"
+	CallbackURL    string       `json:"callback_url,omitempty"`
 	Connections    []Connection `json:"connections"`
 }
 

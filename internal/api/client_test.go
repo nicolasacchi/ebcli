@@ -52,7 +52,7 @@ func TestClient_ListASPSPs(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(aspsps)
+		json.NewEncoder(w).Encode(map[string]interface{}{"aspsps": aspsps})
 	}))
 
 	result, err := client.ListASPSPs(context.Background(), "FI", "")

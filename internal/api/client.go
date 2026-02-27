@@ -191,9 +191,11 @@ func (c *Client) ListASPSPs(ctx context.Context, country, psuType string) ([]ASP
 	if psuType != "" {
 		path += "&psu_type=" + url.QueryEscape(psuType)
 	}
-	var result []ASPSPData
-	_, err := c.doRequest(ctx, http.MethodGet, path, nil, &result, nil)
-	return result, err
+	var wrapper struct {
+		ASPSPs []ASPSPData `json:"aspsps"`
+	}
+	_, err := c.doRequest(ctx, http.MethodGet, path, nil, &wrapper, nil)
+	return wrapper.ASPSPs, err
 }
 
 func (c *Client) Authorize(ctx context.Context, req *AuthRequest) (*AuthResponse, error) {
