@@ -9,10 +9,7 @@ import (
 )
 
 func TestGenerateJWT_Structure(t *testing.T) {
-	key, err := LoadPrivateKey("../../testdata/pkcs8.pem")
-	if err != nil {
-		t.Fatalf("loading test key: %v", err)
-	}
+	key := generateTestKey(t)
 
 	appID := "cf589be3-3755-465b-a8df-a90a16a31403"
 	token, err := GenerateJWT(key, appID, time.Hour)
@@ -65,10 +62,7 @@ func TestGenerateJWT_Structure(t *testing.T) {
 }
 
 func TestGenerateJWT_TTLClamping(t *testing.T) {
-	key, err := LoadPrivateKey("../../testdata/pkcs8.pem")
-	if err != nil {
-		t.Fatalf("loading test key: %v", err)
-	}
+	key := generateTestKey(t)
 
 	tests := []struct {
 		name    string

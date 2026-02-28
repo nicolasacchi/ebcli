@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -13,9 +14,13 @@ import (
 
 func testClient(t *testing.T, handler http.Handler) *Client {
 	t.Helper()
-	key, err := auth.LoadPrivateKey("../../testdata/pkcs8.pem")
+	var privBuf, pubBuf bytes.Buffer
+	if err := auth.GenerateKeyPair(&privBuf, &pubBuf); err != nil {
+		t.Fatalf("GenerateKeyPair: %v", err)
+	}
+	key, err := auth.ParsePrivateKey(privBuf.Bytes())
 	if err != nil {
-		t.Fatalf("loading test key: %v", err)
+		t.Fatalf("ParsePrivateKey: %v", err)
 	}
 
 	srv := httptest.NewServer(handler)

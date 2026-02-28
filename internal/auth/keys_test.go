@@ -2,26 +2,50 @@ package auth
 
 import (
 	"bytes"
+	"crypto/x509"
+	"encoding/pem"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestLoadPrivateKey_PKCS1(t *testing.T) {
-	key, err := LoadPrivateKey("../../testdata/pkcs1.pem")
+func TestLoadPrivateKey_PKCS8(t *testing.T) {
+	var privBuf, pubBuf bytes.Buffer
+	if err := GenerateKeyPair(&privBuf, &pubBuf); err != nil {
+		t.Fatalf("GenerateKeyPair: %v", err)
+	}
+
+	path := filepath.Join(t.TempDir(), "test.pem")
+	if err := os.WriteFile(path, privBuf.Bytes(), 0600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	key, err := LoadPrivateKey(path)
 	if err != nil {
-		t.Fatalf("LoadPrivateKey PKCS#1: %v", err)
+		t.Fatalf("LoadPrivateKey PKCS#8: %v", err)
 	}
 	if key.N.BitLen() != KeySize {
 		t.Errorf("key size = %d, want %d", key.N.BitLen(), KeySize)
 	}
 }
 
-func TestLoadPrivateKey_PKCS8(t *testing.T) {
-	key, err := LoadPrivateKey("../../testdata/pkcs8.pem")
-	if err != nil {
-		t.Fatalf("LoadPrivateKey PKCS#8: %v", err)
+func TestLoadPrivateKey_PKCS1(t *testing.T) {
+	key := generateTestKey(t)
+
+	derBytes := x509.MarshalPKCS1PrivateKey(key)
+	pemData := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: derBytes})
+
+	path := filepath.Join(t.TempDir(), "test.pem")
+	if err := os.WriteFile(path, pemData, 0600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
 	}
-	if key.N.BitLen() != KeySize {
-		t.Errorf("key size = %d, want %d", key.N.BitLen(), KeySize)
+
+	loaded, err := LoadPrivateKey(path)
+	if err != nil {
+		t.Fatalf("LoadPrivateKey PKCS#1: %v", err)
+	}
+	if loaded.N.BitLen() != KeySize {
+		t.Errorf("key size = %d, want %d", loaded.N.BitLen(), KeySize)
 	}
 }
 
@@ -40,8 +64,8 @@ func TestLoadPrivateKey_InvalidPEM(t *testing.T) {
 }
 
 func TestLoadPrivateKey_UnsupportedType(t *testing.T) {
-	pem := []byte("-----BEGIN CERTIFICATE-----\nYWJj\n-----END CERTIFICATE-----\n")
-	_, err := ParsePrivateKey(pem)
+	p := []byte("-----BEGIN CERTIFICATE-----\nYWJj\n-----END CERTIFICATE-----\n")
+	_, err := ParsePrivateKey(p)
 	if err == nil {
 		t.Fatal("expected error for unsupported PEM type")
 	}
@@ -60,7 +84,6 @@ func TestGenerateKeyPair(t *testing.T) {
 		t.Error("public key is empty")
 	}
 
-	// Verify the generated key can be loaded back
 	key, err := ParsePrivateKey(privBuf.Bytes())
 	if err != nil {
 		t.Fatalf("ParsePrivateKey on generated key: %v", err)
