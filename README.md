@@ -154,7 +154,7 @@ Output format:
   "accounts": [
     {
       "alias": "ing-eur",
-      "iban": "IT84C...",
+      "iban": "IT60X...",
       "balances": [...],
       "transactions": [...]
     }
@@ -238,7 +238,7 @@ The `--account` flag accepts multiple identifiers, resolved in order:
 1. **Alias** — `ing-eur` (auto-generated as `bankname-currency-N`)
 2. **UID** — `9594e67d-faf8-4aee-811f-964bdecf4d66`
 3. **UID prefix** — `9594e` (minimum 4 characters)
-4. **IBAN** — `IT84C0347501605CC0010548351`
+4. **IBAN** — `IT60X0542811101000000123456`
 
 All matching is case-insensitive.
 
