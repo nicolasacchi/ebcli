@@ -29,7 +29,8 @@ make install    # installs to $GOPATH/bin
 # 1. Set up config (generates RSA keypair, asks for app ID)
 ebcli config --init
 
-# 2. Upload the generated public key at https://enablebanking.com/cp/applications
+# 2. Create an app at https://enablebanking.com/cp/applications
+#    Upload the generated public key and add the redirect URL
 
 # 3. Connect to your bank
 ebcli connect --country IT --bank "ING"
@@ -39,6 +40,58 @@ ebcli balances
 ebcli transactions --days 30
 ebcli dump --all --days 90
 ```
+
+## Enable Banking Setup
+
+ebcli uses the [Enable Banking](https://enablebanking.com) API to access bank accounts via PSD2/Open Banking. You need an Enable Banking application before using ebcli.
+
+### 1. Create an account
+
+Sign up at [enablebanking.com](https://enablebanking.com) and go to the [Control Panel](https://enablebanking.com/cp/applications).
+
+### 2. Create an application
+
+Create a new application in the Control Panel. Note the **Application ID** (UUID) — you'll need it during `ebcli config --init`.
+
+### 3. Generate keys and configure ebcli
+
+```bash
+ebcli config --init
+```
+
+The wizard will:
+- Generate a 4096-bit RSA keypair (or use an existing key)
+- Ask for your Application ID
+- Ask for the environment (PRODUCTION or SANDBOX)
+- Validate the connection
+
+### 4. Upload the public key
+
+Copy `~/.config/ebcli/public.pem` and paste it into the **Public Key** field of your application in the Enable Banking Control Panel.
+
+### 5. Add the redirect URL
+
+Add this redirect URL to your application in the Control Panel:
+
+```
+http://localhost:18271/callback
+```
+
+For production/headless servers, use your public HTTPS URL instead (see [Production Setup](#production-setup)).
+
+### 6. Activate for production
+
+Production applications require additional information in the Control Panel:
+- Application description
+- GDPR contact email
+- Privacy policy URL
+- Terms of service URL
+
+Two activation paths:
+- **(a) Personal use** — link your own bank accounts via the Control Panel (free)
+- **(b) Commercial use** — sign a contract + KYB for full third-party access
+
+Sandbox applications work immediately without activation.
 
 ## Commands
 
@@ -78,7 +131,9 @@ ebcli connect --country IT --bank "ING"
 ebcli connect --country FI --bank "Nordea" --name nordea-main --valid-days 90
 ```
 
-Opens a browser (or prints the URL on headless machines) for bank authorization. After you authenticate, the callback is captured and a session is stored in the config.
+Opens a browser (or prints the URL on headless machines) for bank authorization. After you authenticate, the callback is captured and a session is stored in the config. The callback server listens for 5 minutes before timing out.
+
+Banks support different authentication methods. Most use **REDIRECT** (browser-based). Some also offer **DECOUPLED** (confirm in your banking app). Use `--auth-method` to pick a specific one when multiple are available.
 
 | Flag | Short | Description |
 |------|-------|-------------|
@@ -266,7 +321,7 @@ Config file: `~/.config/ebcli/config.json`
 
 ### Callback URL
 
-By default, the OAuth callback uses `http://localhost:18271/callback`. For headless servers, set `callback_url` in config to a public HTTPS URL that proxies to the local port.
+By default, the OAuth callback uses `http://localhost:18271/callback` — no `callback_url` in config is needed for local use. For headless or production servers, set `callback_url` in config to a public HTTPS URL that proxies to the local port (see [Production Setup](#production-setup)).
 
 ## Exit Codes
 
@@ -284,17 +339,54 @@ By default, the OAuth callback uses `http://localhost:18271/callback`. For headl
 - `--quiet` suppresses all stderr output.
 - `--raw` outputs the API response verbatim.
 
-## Headless / Production Setup
+## Production Setup
 
-For servers without a browser:
+Production Enable Banking apps require a public HTTPS callback URL and publicly accessible privacy/terms pages. This section covers how to set that up.
 
-1. Run `ebcli config --init` to generate keys
-2. Register your app at https://enablebanking.com/cp/applications
-3. Set up a reverse proxy for the callback URL (e.g., nginx behind Traefik)
-4. Set `callback_url` in config to the public URL
-5. Run `ebcli connect` — copy the printed URL and open in any browser
+### Why
 
-The `web/` directory contains an example nginx config and privacy/terms pages for Enable Banking production requirements.
+- The **callback URL** is where the bank redirects after authentication. For production, Enable Banking requires HTTPS — `http://localhost` won't work.
+- **Privacy and Terms pages** are mandatory for production app registration.
+
+### The `web/` directory
+
+The `web/` directory contains everything you need:
+
+- `nginx.conf` — serves `/privacy`, `/terms`, and proxies `/callback` to the local ebcli callback server
+- `privacy.html` — template privacy policy
+- `terms.html` — template terms of service
+
+### Setup with a reverse proxy
+
+1. Run an nginx container (or similar) serving the `web/` files:
+
+```bash
+# Example: docker run with the included config
+docker run -d --name ebcli-web \
+  -v $(pwd)/web/nginx.conf:/etc/nginx/conf.d/default.conf:ro \
+  -v $(pwd)/web/privacy.html:/usr/share/nginx/html/privacy.html:ro \
+  -v $(pwd)/web/terms.html:/usr/share/nginx/html/terms.html:ro \
+  --add-host=host.docker.internal:host-gateway \
+  nginx:alpine
+```
+
+2. Point your domain to the container using a TLS-terminating reverse proxy (Traefik, Caddy, etc.).
+
+3. Set the callback URL in ebcli config:
+
+```bash
+# Edit ~/.config/ebcli/config.json
+"callback_url": "https://yourdomain.com/callback"
+```
+
+4. Register in Enable Banking Control Panel:
+   - Redirect URL: `https://yourdomain.com/callback`
+   - Privacy URL: `https://yourdomain.com/privacy`
+   - Terms URL: `https://yourdomain.com/terms`
+
+### Headless machines
+
+On servers without a browser, `ebcli connect` prints the authorization URL to stderr. Copy it and open in any browser — even on a different machine. The bank will redirect to your public callback URL, which proxies back to the ebcli callback server running locally.
 
 ## Build
 
