@@ -1,3 +1,6 @@
 ebcli
 dist/
 *.tmp
+.env
+.DS_Store
+*.swp
