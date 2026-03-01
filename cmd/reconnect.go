@@ -26,6 +26,7 @@ func init() {
 	reconnectCmd.MarkFlagRequired("name")
 	reconnectCmd.Flags().Int("valid-days", 0, "consent validity in days")
 	reconnectCmd.Flags().Int("port", auth.DefaultCallbackPort, "local callback server port")
+	reconnectCmd.Flags().Int("max-access-per-day", 0, "daily data refresh limit (0=unlimited, -1=keep current)")
 	rootCmd.AddCommand(reconnectCmd)
 }
 
@@ -34,6 +35,7 @@ func runReconnect(cmd *cobra.Command, args []string) error {
 	name, _ := cmd.Flags().GetString("name")
 	validDays, _ := cmd.Flags().GetInt("valid-days")
 	port, _ := cmd.Flags().GetInt("port")
+	maxAccessPerDay, _ := cmd.Flags().GetInt("max-access-per-day")
 
 	oldConn, err := app.Config.FindConnection(name)
 	if err != nil {
@@ -192,6 +194,12 @@ func runReconnect(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Resolve max access per day: -1 keeps old value, 0+ overrides
+	dailyLimit := oldConn.MaxAccessPerDay
+	if maxAccessPerDay >= 0 {
+		dailyLimit = maxAccessPerDay
+	}
+
 	// Update connection
 	updatedConn := config.Connection{
 		Name:                      name,
@@ -203,6 +211,7 @@ func runReconnect(cmd *cobra.Command, args []string) error {
 		ValidUntil:                validUntil,
 		MaxConsentValiditySeconds: aspsp.MaximumConsentValidity,
 		RequiredPSUHeaders:        aspsp.RequiredPSUHeaders,
+		MaxAccessPerDay:           dailyLimit,
 	}
 
 	if err := app.Config.UpdateConnection(updatedConn); err != nil {

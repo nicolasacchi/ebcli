@@ -32,6 +32,7 @@ func init() {
 	connectCmd.Flags().Int("valid-days", 0, "consent validity in days (default: bank's maximum)")
 	connectCmd.Flags().Int("port", auth.DefaultCallbackPort, "local callback server port")
 	connectCmd.Flags().String("auth-method", "", "specific auth method name")
+	connectCmd.Flags().Int("max-access-per-day", 0, "daily data refresh limit (0=unlimited)")
 	rootCmd.AddCommand(connectCmd)
 }
 
@@ -43,11 +44,12 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	validDays, _ := cmd.Flags().GetInt("valid-days")
 	port, _ := cmd.Flags().GetInt("port")
 	authMethodFlag, _ := cmd.Flags().GetString("auth-method")
+	maxAccessPerDay, _ := cmd.Flags().GetInt("max-access-per-day")
 
-	return doConnect(ctx, country, bankName, connName, validDays, port, authMethodFlag)
+	return doConnect(ctx, country, bankName, connName, validDays, port, authMethodFlag, maxAccessPerDay)
 }
 
-func doConnect(ctx context.Context, country, bankName, connName string, validDays, port int, authMethodFlag string) error {
+func doConnect(ctx context.Context, country, bankName, connName string, validDays, port int, authMethodFlag string, maxAccessPerDay int) error {
 	// Step 1: Fetch ASPSP info
 	app.Printer.Info("Fetching bank information for %s in %s...", bankName, country)
 	aspsps, err := app.Client.ListASPSPs(ctx, country, "personal")
@@ -173,6 +175,7 @@ func doConnect(ctx context.Context, country, bankName, connName string, validDay
 		ValidUntil:                validUntil,
 		MaxConsentValiditySeconds: aspsp.MaximumConsentValidity,
 		RequiredPSUHeaders:        aspsp.RequiredPSUHeaders,
+		MaxAccessPerDay:           maxAccessPerDay,
 	}
 
 	if err := app.Config.AddConnection(conn); err != nil {

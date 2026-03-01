@@ -22,6 +22,7 @@ type Connection struct {
 	ValidUntil                time.Time `json:"valid_until"`
 	MaxConsentValiditySeconds int       `json:"max_consent_validity_seconds"`
 	RequiredPSUHeaders        []string  `json:"required_psu_headers,omitempty"`
+	MaxAccessPerDay           int       `json:"max_access_per_day,omitempty"` // 0 = unlimited
 }
 
 // Account represents a single bank account within a connection.

@@ -266,11 +266,13 @@ type StatusOutput struct {
 
 // ConnectionStatus shows the status of a single connection.
 type ConnectionStatus struct {
-	Name       string    `json:"name"`
-	Bank       string    `json:"bank"`
-	Country    string    `json:"country"`
-	Status     string    `json:"status"`
-	Accounts   int       `json:"accounts"`
-	ValidUntil time.Time `json:"valid_until"`
-	DaysLeft   int       `json:"days_left"`
+	Name            string    `json:"name"`
+	Bank            string    `json:"bank"`
+	Country         string    `json:"country"`
+	Status          string    `json:"status"`
+	Accounts        int       `json:"accounts"`
+	ValidUntil      time.Time `json:"valid_until"`
+	DaysLeft        int       `json:"days_left"`
+	MaxAccessPerDay int       `json:"max_access_per_day,omitempty"`
+	DailyUsed       int       `json:"daily_used,omitempty"`
 }

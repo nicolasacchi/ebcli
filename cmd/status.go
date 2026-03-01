@@ -46,8 +46,8 @@ var statusCmd = &cobra.Command{
 			app.Printer.Info("No connections configured. Run: ebcli connect")
 		} else {
 			w := tabwriter.NewWriter(os.Stderr, 0, 0, 2, ' ', 0)
-			fmt.Fprintf(w, "CONNECTION\tBANK\tACCOUNTS\tVALID UNTIL\tSTATUS\tDAYS LEFT\n")
-			fmt.Fprintf(w, "----------\t----\t--------\t-----------\t------\t---------\n")
+			fmt.Fprintf(w, "CONNECTION\tBANK\tACCOUNTS\tVALID UNTIL\tSTATUS\tDAYS LEFT\tTODAY\n")
+			fmt.Fprintf(w, "----------\t----\t--------\t-----------\t------\t---------\t-----\n")
 
 			for _, conn := range app.Config.Connections {
 				sessionStatus := "UNKNOWN"
@@ -67,16 +67,23 @@ var statusCmd = &cobra.Command{
 					}
 				}
 
-				fmt.Fprintf(w, "%s\t%s %s\t%d\t%s\t%s\t%d\n",
+				todayStr := "-"
+				if conn.MaxAccessPerDay > 0 && app.RateLimit != nil {
+					used, _ := app.RateLimit.DailyUsageFor(conn.Name)
+					todayStr = fmt.Sprintf("%d/%d", used, conn.MaxAccessPerDay)
+				}
+
+				fmt.Fprintf(w, "%s\t%s %s\t%d\t%s\t%s\t%d\t%s\n",
 					conn.Name,
 					conn.ASPSPName, conn.ASPSPCountry,
 					len(conn.Accounts),
 					conn.ValidUntil.Format("2006-01-02"),
 					sessionStatus,
 					daysLeft,
+					todayStr,
 				)
 
-				output.Connections = append(output.Connections, api.ConnectionStatus{
+				connStatus := api.ConnectionStatus{
 					Name:       conn.Name,
 					Bank:       conn.ASPSPName,
 					Country:    conn.ASPSPCountry,
@@ -84,7 +91,14 @@ var statusCmd = &cobra.Command{
 					Accounts:   len(conn.Accounts),
 					ValidUntil: conn.ValidUntil,
 					DaysLeft:   daysLeft,
-				})
+				}
+				if conn.MaxAccessPerDay > 0 {
+					connStatus.MaxAccessPerDay = conn.MaxAccessPerDay
+					if app.RateLimit != nil {
+						connStatus.DailyUsed, _ = app.RateLimit.DailyUsageFor(conn.Name)
+					}
+				}
+				output.Connections = append(output.Connections, connStatus)
 			}
 			w.Flush()
 		}

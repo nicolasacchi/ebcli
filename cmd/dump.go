@@ -25,6 +25,11 @@ var dumpCmd = &cobra.Command{
 			return err
 		}
 
+		accounts = checkDailyLimits(accounts)
+		if len(accounts) == 0 {
+			return ExitWithError(ExitAPIError, "all accounts skipped due to daily limits")
+		}
+
 		fromDate, toDate, err := parseDateRange(fromFlag, toFlag, daysFlag)
 		if err != nil {
 			return ExitWithError(ExitUserError, "%v", err)
@@ -86,6 +91,7 @@ var dumpCmd = &cobra.Command{
 			})
 		}
 
+		recordDailyAccess(accounts)
 		return app.Printer.JSON(output)
 	},
 }

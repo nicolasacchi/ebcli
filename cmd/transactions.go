@@ -42,6 +42,11 @@ func runTransactions(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	accounts = checkDailyLimits(accounts)
+	if len(accounts) == 0 {
+		return ExitWithError(ExitAPIError, "all accounts skipped due to daily limits")
+	}
+
 	fromDate, toDate, err := parseDateRange(fromFlag, toFlag, daysFlag)
 	if err != nil {
 		return ExitWithError(ExitUserError, "%v", err)
@@ -79,6 +84,8 @@ func runTransactions(cmd *cobra.Command, args []string) error {
 	if allTxns == nil {
 		allTxns = []annotatedTransaction{}
 	}
+
+	recordDailyAccess(accounts)
 	return app.Printer.JSON(allTxns)
 }
 

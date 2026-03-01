@@ -20,6 +20,11 @@ var balancesCmd = &cobra.Command{
 			return err
 		}
 
+		accounts = checkDailyLimits(accounts)
+		if len(accounts) == 0 {
+			return ExitWithError(ExitAPIError, "all accounts skipped due to daily limits")
+		}
+
 		var output []api.BalanceOutput
 		for _, ra := range accounts {
 			resp, err := app.Client.GetBalances(ctx, ra.Account.UID, ra.RequiredPSUHeaders)
@@ -37,6 +42,8 @@ var balancesCmd = &cobra.Command{
 		if output == nil {
 			output = []api.BalanceOutput{}
 		}
+
+		recordDailyAccess(accounts)
 		return app.Printer.JSON(output)
 	},
 }
